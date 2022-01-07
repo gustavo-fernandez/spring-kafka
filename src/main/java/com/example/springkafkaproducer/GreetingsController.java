@@ -2,6 +2,7 @@ package com.example.springkafkaproducer;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -9,6 +10,7 @@ import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -28,19 +30,19 @@ public class GreetingsController {
 
   @GetMapping
   public Mono<String> greeting(@RequestParam String name) {
-    var saludo = "Hello " + name;
+    var person = new Person(name, new Random().nextInt(100));
     var key = UUID.randomUUID().toString();
 
     Map<String, Object> config = new HashMap<>();
     config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
     config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-    config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+    config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
 
-    var senderOptions = SenderOptions.<String, String>create(config);
-    var kafkaSender = KafkaSender.<String, String>create(senderOptions);
+    var senderOptions = SenderOptions.<String, Person>create(config);
+    var kafkaSender = KafkaSender.create(senderOptions);
 
     var record = SenderRecord
-      .create(new ProducerRecord<>("spring-topic", key, saludo), key);
+      .create(new ProducerRecord<>("spring-2-topic", key, person), key);
 
     return kafkaSender.send(Mono.just(record))
       .next()
