@@ -1,5 +1,7 @@
 package com.example.springkafkaproducer;
 
+import com.example.avro.model.Customer;
+import com.example.springkafkaproducer.util.AvroSerializer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -30,19 +32,19 @@ public class GreetingsController {
 
   @GetMapping
   public Mono<String> greeting(@RequestParam String name) {
-    var person = new Person(name, new Random().nextInt(100));
+    var customer = new Customer(name, new Random().nextInt(100));
     var key = UUID.randomUUID().toString();
 
     Map<String, Object> config = new HashMap<>();
     config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
     config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
-    config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+    config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, AvroSerializer.class);
 
-    var senderOptions = SenderOptions.<String, Person>create(config);
+    var senderOptions = SenderOptions.<String, Customer>create(config);
     var kafkaSender = KafkaSender.create(senderOptions);
 
     var record = SenderRecord
-      .create(new ProducerRecord<>("spring-2-topic", key, person), key);
+      .create(new ProducerRecord<>("spring-3-topic", key, customer), key);
 
     return kafkaSender.send(Mono.just(record))
       .next()
